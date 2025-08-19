@@ -134,11 +134,11 @@ check-service:
 
 # END: we-managed-block
 EOF
-  # Replace placeholders with actual values
-  sed -e "s/__SERVICE__/$SERVICE/g" \
-      -e "s/__PROJECT__/$PROJECT/g" \
-      -e "s/__ENTRY__/$ENTRY/g" \
-      -e "s/__WEX_CMD__/$wex_cmd/g" \
+  # Replace placeholders with actual values using alternative delimiter
+  sed -e "s|__SERVICE__|$SERVICE|g" \
+      -e "s|__PROJECT__|$PROJECT|g" \
+      -e "s|__ENTRY__|$ENTRY|g" \
+      -e "s|__WEX_CMD__|$wex_cmd|g" \
       "$tmp" > "$out"
   rm -f "$tmp"
 }
