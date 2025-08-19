@@ -9,7 +9,13 @@ cp -r lib/we/* "$DEST_LIB/"
 chmod -R +r "$DEST_LIB"
 
 # Update the LIB_DIR path in the installed script
+echo "Updating LIB_DIR path in $DEST_BIN/we"
+echo "DEST_LIB is $DEST_LIB"
 sed -i "s|LIB_DIR=\"\$ROOT_DIR/lib/we\"|LIB_DIR=\"$DEST_LIB\"|" "$DEST_BIN/we"
+echo "Updated LIB_DIR path"
+
+# Verify the update
+grep "LIB_DIR=" "$DEST_BIN/we"
 
 # Get the version by running the installed script
 VERSION=$("$DEST_BIN/we" --version 2>/dev/null || echo "unknown")
