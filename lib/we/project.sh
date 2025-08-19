@@ -43,4 +43,10 @@ compute_defaults(){
   RUNLOG="$RUNDIR/run.log"
   ARCHIVE="$LOGDIR/${SERVICE}-${TIMESTAMP}-${HASH}.log"
   UNIT="we-${SERVICE}-${UNIT_SUFFIX}"
+  
+  # Set default values for Makefile variables
+  RELOAD=${RELOAD:-1}
+  KEEP_N=${KEEP_N:-10}
+  SECURE=${SECURE:-0}
+  TAIL=${TAIL:-100}
 }
