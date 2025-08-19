@@ -2,11 +2,13 @@
 set -euo pipefail
 DEST_BIN="${HOME}/.local/bin"
 DEST_LIB="${HOME}/.local/lib/we"
-mkdir -p "$DEST_BIN" "$DEST_LIB"
+DEST_TOOLS="${HOME}/.local/share/we/tools"
+mkdir -p "$DEST_BIN" "$DEST_LIB" "$DEST_TOOLS"
 cp we "$DEST_BIN/we"
 chmod +x "$DEST_BIN/we"
 cp -r lib/we/* "$DEST_LIB/"
-chmod -R +r "$DEST_LIB"
+cp -r tools/* "$DEST_TOOLS/"
+chmod -R +r "$DEST_LIB" "$DEST_TOOLS"
 
 # Update the LIB_DIR path in the installed script
 echo "Updating LIB_DIR path in $DEST_BIN/we"
