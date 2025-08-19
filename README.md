@@ -115,3 +115,4 @@ Quick commands:
 RELOAD=1 enables live reload via watchexec; set RELOAD=0 to disable. Set SECURE=1 to enable systemd hardening flags.
 
 <!-- END: we-readme -->
+# Test deployment

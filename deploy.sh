@@ -13,6 +13,10 @@ echo "Committed changes with timestamp: $TIMESTAMP"
 git push origin main
 echo "Pushed to GitHub"
 
+# Wait a bit for GitHub's cache to update
+echo "Waiting for GitHub cache to update..."
+sleep 15
+
 # Install via curl and log version
 echo "Installing via curl..."
 INSTALL_OUTPUT=$(curl -sSL https://raw.githubusercontent.com/amitskidrow/we-tool/main/install.sh | bash)
@@ -20,7 +24,7 @@ echo "$INSTALL_OUTPUT"
 
 # Extract version from the installation output
 if echo "$INSTALL_OUTPUT" | grep -q "Installed 'we'"; then
-    VERSION_LINE=$(echo "$INSTALL_OUTPUT" | head -n 1)
+    VERSION_LINE=$(echo "$INSTALL_OUTPUT" | grep "Installed 'we'")
     echo "Installation log: $VERSION_LINE"
 else
     echo "Installation failed or version not found"
