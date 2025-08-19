@@ -54,47 +54,47 @@ CMD_RELOAD := cd "\$(PROJECT)" && \$(WEX) uv run --project "\$(PROJECT)" -- \$(E
 CMD_PLAIN := cd "\$(PROJECT)" && uv run --project "\$(PROJECT)" -- \$(ENTRY)
 
 # ensure directories and RUNLOG symlink, then start under systemd-run
-up.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" RELOAD="\$(RELOAD)" KEEP_N="\$(KEEP_N)" SECURE="\$(SECURE)" \
-	  uv run -- python tools/uuctl.py up
+up.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py up
 
 # stop unit and cleanup ephemeral files
-down.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" \
-	  uv run -- python tools/uuctl.py down
+down.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py down
 
 # one-line ps output
-ps.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" \
-	  uv run -- python tools/uuctl.py ps
+ps.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py ps
 
 # logs: show tail of RUNLOG, fallback to journal
-logs.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" TAIL="\$(TAIL)" \
-	  uv run -- python tools/uuctl.py logs
+logs.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" TAIL="$(TAIL)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py logs
 
 # follow logs
-follow.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" \
-	  uv run -- python tools/uuctl.py follow
+follow.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py follow
 
 # restart
-restart.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" RELOAD="\$(RELOAD)" KEEP_N="\$(KEEP_N)" SECURE="\$(SECURE)" \
-	  uv run -- python tools/uuctl.py restart
+restart.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py restart
 
 # foreground doctor mode (no systemd)
-doctor.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" \
-	  uv run -- python tools/uuctl.py doctor
+doctor.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py doctor
 
-unit.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" \
-	  uv run -- python tools/uuctl.py unit
+unit.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py unit
 
-journal.\$(SERVICE):
-	@cd "\$(PROJECT)/.." && SERVICE="\$(SERVICE)" PROJECT="\$(PROJECT)" ENTRY="\$(ENTRY)" \
-	  uv run -- python tools/uuctl.py journal
+journal.$(SERVICE):
+	@cd "$(PROJECT)/.." && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	  uv run -- python ~/.local/share/we/tools/uuctl.py journal
 
 # unsuffixed guard
 # Unsuffixed proxy targets - proxy to the single service or error with hint
