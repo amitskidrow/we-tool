@@ -1,0 +1,101 @@
+# Development Makefile for 'we' tool
+# Implements Phase 3 quality gates and development workflows
+
+.PHONY: help install test lint format check clean setup-dev
+
+# Default target
+help: ## Show this help message
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+# Installation and setup
+install: ## Install the tool to ~/.local/bin
+	@./install.sh
+
+setup-dev: ## Setup development environment with pre-commit hooks
+	@echo "Setting up development environment..."
+	@uv sync
+	@if command -v pre-commit >/dev/null 2>&1; then \
+		pre-commit install; \
+		echo "✅ Pre-commit hooks installed"; \
+	else \
+		echo "⚠️  pre-commit not found. Install with: pip install pre-commit"; \
+	fi
+	@if ! command -v bats >/dev/null 2>&1; then \
+		echo "⚠️  bats not found. Install with your package manager:"; \
+		echo "   - Ubuntu/Debian: sudo apt install bats"; \
+		echo "   - Arch: sudo pacman -S bats"; \
+		echo "   - macOS: brew install bats-core"; \
+	fi
+
+# Testing
+test: ## Run all tests (bats integration tests)
+	@echo "Running integration tests..."
+	@if command -v bats >/dev/null 2>&1; then \
+		bats tests/; \
+	else \
+		echo "❌ bats not found. Please install bats-core first."; \
+		exit 1; \
+	fi
+
+test-python: ## Run Python CLI tests
+	@echo "Testing Python CLI..."
+	@uv run -- python tools/uuctl.py --help >/dev/null
+	@echo "✅ Python CLI works"
+
+# Code quality
+lint: ## Run all linters (shellcheck + ruff)
+	@echo "Running ShellCheck on shell scripts..."
+	@find . -name "*.sh" -not -path "./.venv/*" -exec shellcheck {} \;
+	@echo "Running Ruff on Python files..."
+	@uv run ruff check tools/
+
+format: ## Format all code (shfmt + black + ruff)
+	@echo "Formatting shell scripts..."
+	@if command -v shfmt >/dev/null 2>&1; then \
+		find . -name "*.sh" -not -path "./.venv/*" -exec shfmt -w -s -i 2 {} \;; \
+	else \
+		echo "⚠️  shfmt not found. Install from: https://github.com/mvdan/sh"; \
+	fi
+	@echo "Formatting Python code..."
+	@uv run black tools/
+	@uv run ruff format tools/
+
+check: ## Run all quality checks (lint + test + validate)
+	@echo "🔍 Running all quality checks..."
+	@$(MAKE) -f Makefile.dev lint
+	@$(MAKE) -f Makefile.dev test-python
+	@$(MAKE) -f Makefile.dev validate
+	@if command -v bats >/dev/null 2>&1; then $(MAKE) -f Makefile.dev test; fi
+	@echo "✅ All quality checks passed!"
+
+validate: ## Validate existing Makefiles
+	@echo "Validating Makefile structure..."
+	@./tools/we-validate-makefile.sh
+
+# Development utilities
+clean: ## Clean up temporary files and caches
+	@echo "Cleaning up..."
+	@find . -name "*.pyc" -delete
+	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf .pytest_cache/
+	@rm -rf build/
+	@rm -rf dist/
+	@rm -rf *.egg-info/
+	@echo "✅ Cleanup complete"
+
+# Pre-commit integration
+pre-commit: ## Run pre-commit hooks on all files
+	@if command -v pre-commit >/dev/null 2>&1; then \
+		pre-commit run --all-files; \
+	else \
+		echo "❌ pre-commit not found. Install with: pip install pre-commit"; \
+		exit 1; \
+	fi
+
+# CI/CD simulation
+ci: ## Simulate CI pipeline (setup + check)
+	@echo "🚀 Simulating CI pipeline..."
+	@$(MAKE) setup-dev
+	@$(MAKE) check
+	@echo "✅ CI pipeline simulation complete!"
