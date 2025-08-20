@@ -13,6 +13,11 @@ main() {
   parse_args "$@"
   resolve_project
 
+  # If MAKEFILE_OUT is still the default, change it to be in the PROJECT directory
+  if [ "$MAKEFILE_OUT" = "Makefile" ]; then
+    MAKEFILE_OUT="$PROJECT/Makefile"
+  fi
+
   compute_defaults
 
   if [ "${DRY_RUN:-0}" = "1" ]; then
