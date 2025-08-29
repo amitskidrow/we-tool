@@ -23,7 +23,7 @@ parse_args(){
       --dry-run) DRY_RUN=1; shift;;
       --yes) YES=1; shift;;
       -h|--help) usage; exit 0;;
-      -V|--version) echo "we 0.2.3"; exit 0;;
+      -V|--version) echo "we 0.2.4"; exit 0;;
       --) shift; break;;
       -*) echo "Unknown flag: $1"; usage; exit 1;;
       *)

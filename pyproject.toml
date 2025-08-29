@@ -1,6 +1,6 @@
 [project]
 name = "we-dev-runner"
-version = "0.2.3"
+version = "0.2.4"
 description = "Python CLI for 'we' development runner"
 requires-python = ">=3.8"
 dependencies = [
