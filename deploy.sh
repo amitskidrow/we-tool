@@ -14,7 +14,7 @@ bump_version() {
   if [[ ! -f "$pyproject" || ! -f "$args_sh" ]]; then
     echo "pyproject.toml or lib/we/args.sh not found; skipping version bump"
     return 0
-  }
+  fi
 
   # Extract current version from pyproject.toml
   local current
@@ -34,11 +34,11 @@ bump_version() {
   local next_version
   next_version="${MAJOR}.${MINOR}.${next_patch}"
 
-  # Update pyproject.toml
-  sed -i -E "s/^version = \"${current}\"/version = \"${next_version}\"/" "$pyproject"
+  # Update pyproject.toml (replace only the numeric part)
+  sed -i -E 's/^(version = ")[0-9]+\.[0-9]+\.[0-9]+(")/\1'"${next_version}"'\2/' "$pyproject"
 
   # Update args.sh version string used by `we --version`
-  sed -i -E "s/( -V\|--version\) echo \"we )[0-9]+\.[0-9]+\.[0-9]+(\"; exit 0;\)/\1${next_version}\2/" "$args_sh"
+  sed -i -E 's/^([[:space:]]*-V\|--version\)[[:space:]]*echo[[:space:]]*"we )[0-9]+\.[0-9]+\.[0-9]+/\1'"${next_version}"'/' "$args_sh"
 
   echo "Bumped version: ${current} -> ${next_version}"
 }
