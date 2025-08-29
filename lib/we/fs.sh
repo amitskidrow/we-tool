@@ -59,123 +59,123 @@ UUCTL_FALLBACK := $(HOME)/.local/share/we/tools/uuctl.py
 
 # ensure directories and RUNLOG symlink, then start under systemd-run
 up.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
-	    uv run -- python tools/uuctl.py up \
-	  || \
+	    uv run -- python tools/uuctl.py up; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" up \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" up; \
+	fi
 
 # stop unit and cleanup ephemeral files
 down.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python tools/uuctl.py down \
-	  || \
+	    uv run -- python tools/uuctl.py down; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" down \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" down; \
+	fi
 
 # one-line ps output
 ps.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python tools/uuctl.py ps \
-	  || \
+	    uv run -- python tools/uuctl.py ps; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" ps \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" ps; \
+	fi
 
 # logs: show tail of RUNLOG, fallback to journal
 logs.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" TAIL="$(TAIL)" \
-	    uv run -- python tools/uuctl.py logs \
-	  || \
+	    uv run -- python tools/uuctl.py logs; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" TAIL="$(TAIL)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" logs \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" logs; \
+	fi
 
 # follow logs
 follow.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python tools/uuctl.py follow \
-	  || \
+	    uv run -- python tools/uuctl.py follow; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" follow \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" follow; \
+	fi
 
 # restart
 restart.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
-	    uv run -- python tools/uuctl.py restart \
-	  || \
+	    uv run -- python tools/uuctl.py restart; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" restart \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" restart; \
+	fi
 
 # foreground doctor mode (no systemd)
 doctor.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python tools/uuctl.py doctor \
-	  || \
+	    uv run -- python tools/uuctl.py doctor; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" doctor \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" doctor; \
+	fi
 
 unit.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python tools/uuctl.py unit \
-	  || \
+	    uv run -- python tools/uuctl.py unit; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" unit \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" unit; \
+	fi
 
 journal.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python tools/uuctl.py journal \
-	  || \
+	    uv run -- python tools/uuctl.py journal; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" journal \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" journal; \
+	fi
 
 # watch: restart-if-running then follow
 watch.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
-	    uv run -- python tools/uuctl.py watch \
-	  || \
+	    uv run -- python tools/uuctl.py watch; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" watch \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" watch; \
+	fi
 
 # launch: restart-if-running then show recent logs (alias: run)
 launch.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
-	    uv run -- python tools/uuctl.py launch \
-	  || \
+	    uv run -- python tools/uuctl.py launch; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" launch \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" launch; \
+	fi
 
 run.$(SERVICE): launch.$(SERVICE)
 
 # kill: stop all we-$(SERVICE)-* user units
 kill.$(SERVICE):
-	@cd "$(PROJECT)" && ( \
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python tools/uuctl.py kill \
-	  || \
+	    uv run -- python tools/uuctl.py kill; \
+	else \
 	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
-	    uv run -- python "$(UUCTL_FALLBACK)" kill \
-	)
+	    uv run -- python "$(UUCTL_FALLBACK)" kill; \
+	fi
 
 # unsuffixed guard
 # Unsuffixed proxy targets - proxy to the single service or error with hint

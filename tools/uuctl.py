@@ -301,7 +301,9 @@ def logs(
     service: Optional[str] = typer.Option(
         None, help="Service name (overrides SERVICE env var)"
     ),
-    lines: int = typer.Option(None, "--lines", "-n", help="Number of lines to show"),
+    lines: Optional[int] = typer.Option(
+        None, "--lines", "-n", help="Number of lines to show"
+    ),
 ):
     """Show service logs"""
     config = ServiceConfig()
@@ -310,7 +312,9 @@ def logs(
         config.unit = f"we-{service}-{config.unit_suffix}"
     config.validate()
 
-    tail_lines = lines or config.tail
+    # When called programmatically from other commands (launch/run/watch),
+    # Typer's default can be a OptionInfo object. Ensure we have an int.
+    tail_lines = lines if isinstance(lines, int) and lines >= 0 else config.tail
 
     # Try to read from run log file first, fallback to journal
     if config.runlog.exists() and config.runlog.is_file():
