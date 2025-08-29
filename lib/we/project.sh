@@ -16,16 +16,26 @@ resolve_project(){
     SERVICE="$(basename "$MODULE")"
   fi
 
-  # default ENTRY
+  # default ENTRY (priority order): __main__.py, main.py, run.py, app.py, index.py, start.py
   if [ -n "${ENTRY:-}" ]; then
     :
   else
     if [ -f "$MODULE" ] && [[ "$MODULE" == *.py ]]; then
       ENTRY="python $(basename "$MODULE")"
-    elif [ -f "$PROJECT/main.py" ]; then
-      ENTRY="python main.py"
     else
-      ENTRY="python -m ${SERVICE}"
+      # Probe candidate files in the project directory
+      local found=""
+      for f in __main__.py main.py run.py app.py index.py start.py; do
+        if [ -f "$PROJECT/$f" ]; then
+          found="$f"
+          break
+        fi
+      done
+      if [ -n "$found" ]; then
+        ENTRY="python $found"
+      else
+        ENTRY="python -m ${SERVICE}"
+      fi
     fi
   fi
 
