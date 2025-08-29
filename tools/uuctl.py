@@ -38,15 +38,14 @@ class ServiceConfig:
         self.unit_suffix = self._compute_unit_suffix()
         self.unit = f"we-{self.service}-{self.unit_suffix}"
 
-        # Paths
-        self.rundir = Path(f".we/{self.service}")
+        # Paths (under project directory)
+        project_path = Path(self.project).resolve() if self.project else Path.cwd()
+        self.project_path = project_path
+        self.rundir = project_path / ".we" / self.service
         self.runlog = self.rundir / "run.log"
-
-        state_home = os.environ.get(
-            "XDG_STATE_HOME", os.path.expanduser("~/.local/state")
-        )
-        self.state_dir = Path(state_home) / "we"
-        self.logdir = self.state_dir / self.service / "logs"
+        self.logdir = self.rundir / "logs"
+        # PID file at project root
+        self.pid_file = project_path / ".we.pid"
 
         # Commands
         self.wex_cmd = [
@@ -113,6 +112,33 @@ def run_cmd(
         return e
 
 
+def unit_is_active(unit: str) -> bool:
+    try:
+        subprocess.run(
+            ["systemctl", "--user", "is-active", "--quiet", unit],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def get_main_pid(unit: str) -> int:
+    try:
+        res = subprocess.run(
+            ["systemctl", "--user", "show", "-p", "MainPID", "--value", unit],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        pid_s = res.stdout.strip()
+        return int(pid_s) if pid_s.isdigit() else 0
+    except Exception:
+        return 0
+
+
 @app.command()
 def up(
     ctx: typer.Context,
@@ -126,8 +152,7 @@ def up(
         config.service = service
         config.unit = f"we-{service}-{config.unit_suffix}"
     config.validate()
-
-    # Ensure directories exist
+    # Ensure directories exist under project
     config.logdir.mkdir(parents=True, exist_ok=True)
     config.rundir.mkdir(parents=True, exist_ok=True)
 
@@ -143,6 +168,11 @@ def up(
     if config.runlog.exists() or config.runlog.is_symlink():
         config.runlog.unlink()
     config.runlog.symlink_to(archive_log.absolute())
+
+    # If already active, be idempotent
+    if unit_is_active(config.unit):
+        console.print(f"[yellow]Unit {config.unit} already active[/yellow]")
+        return
 
     console.print(f"Starting unit [bold]{config.unit}[/bold]")
 
@@ -176,6 +206,20 @@ def up(
     # Start the service
     run_cmd(systemd_cmd)
 
+    # Best-effort: fetch MainPID and write to .we.pid
+    import time
+    pid = 0
+    for _ in range(30):
+        pid = get_main_pid(config.unit)
+        if pid > 0:
+            break
+        time.sleep(0.1)
+    if pid > 0:
+        try:
+            config.pid_file.write_text(str(pid))
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not write PID file: {e}[/yellow]")
+
     # Prune old log files
     _prune_logs(config)
 
@@ -198,11 +242,17 @@ def down(
 
     # Stop the unit
     run_cmd(["systemctl", "--user", "stop", config.unit], check=False)
-    run_cmd(["systemctl", "--user", "reset-failed", config.unit], check=False)
+    # Avoid noisy message when unit not loaded
+    run_cmd(["systemctl", "--user", "reset-failed", config.unit], check=False, capture=True)
 
     # Remove run log symlink
     if config.runlog.exists() or config.runlog.is_symlink():
         config.runlog.unlink()
+    if config.pid_file.exists():
+        try:
+            config.pid_file.unlink()
+        except Exception:
+            pass
 
     console.print(f"[yellow]Stopped {config.unit}[/yellow]")
 
@@ -307,6 +357,109 @@ def restart(
 
     console.print("Starting service...")
     up(ctx, service)
+
+
+@app.command()
+def watch(
+    ctx: typer.Context,
+    service: Optional[str] = typer.Option(
+        None, help="Service name (overrides SERVICE env var)"
+    ),
+):
+    """Start or restart the service, then follow logs"""
+    config = ServiceConfig()
+    if service:
+        config.service = service
+        config.unit = f"we-{service}-{config.unit_suffix}"
+    config.validate()
+
+    if unit_is_active(config.unit):
+        console.print("Service active; restarting before follow...")
+        restart(ctx, service)
+    else:
+        up(ctx, service)
+
+    follow(ctx, service)
+
+
+@app.command()
+def launch(
+    ctx: typer.Context,
+    service: Optional[str] = typer.Option(
+        None, help="Service name (overrides SERVICE env var)"
+    ),
+):
+    """Start or restart the service, then show recent logs"""
+    config = ServiceConfig()
+    if service:
+        config.service = service
+        config.unit = f"we-{service}-{config.unit_suffix}"
+    config.validate()
+
+    if unit_is_active(config.unit):
+        console.print("Service active; restarting before logs...")
+        restart(ctx, service)
+    else:
+        up(ctx, service)
+
+    logs(ctx, service)
+
+
+@app.command(name="run")
+def run_alias(
+    ctx: typer.Context,
+    service: Optional[str] = typer.Option(
+        None, help="Service name (overrides SERVICE env var)"
+    ),
+):
+    """Alias for launch"""
+    launch(ctx, service)
+
+
+@app.command()
+def kill(
+    ctx: typer.Context,
+    service: Optional[str] = typer.Option(
+        None, help="Service name (overrides SERVICE env var)"
+    ),
+):
+    """Stop all user units for this service (we-<service>-*)"""
+    config = ServiceConfig()
+    if service:
+        config.service = service
+        config.unit = f"we-{service}-{config.unit_suffix}"
+    config.validate()
+
+    # List all matching units
+    try:
+        res = subprocess.run(
+            [
+                "systemctl",
+                "--user",
+                "list-units",
+                "--type=service",
+                "--all",
+                "--no-legend",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        stopped_any = False
+        for line in res.stdout.splitlines():
+            parts = line.split()
+            if not parts:
+                continue
+            unit_name = parts[0]
+            if unit_name.startswith(f"we-{config.service}-"):
+                run_cmd(["systemctl", "--user", "stop", unit_name], check=False)
+                run_cmd(["systemctl", "--user", "reset-failed", unit_name], check=False, capture=True)
+                console.print(f"[yellow]Stopped {unit_name}[/yellow]")
+                stopped_any = True
+        if not stopped_any:
+            console.print(f"No matching units for service {config.service}")
+    except Exception as e:
+        console.print(f"[red]kill failed: {e}[/red]")
 
 
 @app.command()

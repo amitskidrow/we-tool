@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Usage: ./makeq [--verbose] <target> [VAR=...]
+if [[ "$1" == "--verbose" ]]; then shift; VERBOSE=1 exec make "$@"; else exec make "$@"; fi
+

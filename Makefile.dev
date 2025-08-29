@@ -1,3 +1,11 @@
+# Quiet by default. Use: make VERBOSE=1 <target>
+ifeq ($(VERBOSE),1)
+  # Verbose: default GNU make behavior
+else
+  .SILENT:
+  MAKEFLAGS += --no-print-directory
+endif
+
 # Development Makefile for 'we' tool
 # Implements Phase 3 quality gates and development workflows
 
