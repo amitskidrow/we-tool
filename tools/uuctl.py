@@ -156,6 +156,25 @@ def up(
     config.logdir.mkdir(parents=True, exist_ok=True)
     config.rundir.mkdir(parents=True, exist_ok=True)
 
+    # If already active, be idempotent but keep .we.pid in sync
+    if unit_is_active(config.unit):
+        pid = get_main_pid(config.unit)
+        try:
+            config.pid_file.write_text(str(pid if pid > 0 else 0))
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not write PID file: {e}[/yellow]")
+        console.print(f"[yellow]Unit {config.unit} already active[/yellow]
+")
+        return
+
+    console.print(f"Starting unit [bold]{config.unit}[/bold]")
+
+    # Not active: mark pid as 0 until we have one
+    try:
+        config.pid_file.write_text("0")
+    except Exception:
+        pass
+
     # Create archive log file and symlink
     from datetime import datetime
 
@@ -164,17 +183,10 @@ def up(
         config.logdir / f"{config.service}-{timestamp}-{config.unit_suffix}.log"
     )
 
-    # Create symlink to current run log
+    # Create symlink to current run log (only when starting)
     if config.runlog.exists() or config.runlog.is_symlink():
         config.runlog.unlink()
     config.runlog.symlink_to(archive_log.absolute())
-
-    # If already active, be idempotent
-    if unit_is_active(config.unit):
-        console.print(f"[yellow]Unit {config.unit} already active[/yellow]")
-        return
-
-    console.print(f"Starting unit [bold]{config.unit}[/bold]")
 
     # Build systemd-run command
     systemd_cmd = [
@@ -219,6 +231,12 @@ def up(
             config.pid_file.write_text(str(pid))
         except Exception as e:
             console.print(f"[yellow]Warning: Could not write PID file: {e}[/yellow]")
+    else:
+        # Keep explicit 0 when PID cannot be obtained
+        try:
+            config.pid_file.write_text("0")
+        except Exception:
+            pass
 
     # Prune old log files
     _prune_logs(config)
@@ -240,10 +258,17 @@ def down(
         config.unit = f"we-{service}-{config.unit_suffix}"
     config.validate()
 
-    # Stop the unit
-    run_cmd(["systemctl", "--user", "stop", config.unit], check=False)
-    # Avoid noisy message when unit not loaded
-    run_cmd(["systemctl", "--user", "reset-failed", config.unit], check=False, capture=True)
+    # Stop the unit if active; avoid noisy message when not loaded
+    if unit_is_active(config.unit):
+        run_cmd(["systemctl", "--user", "stop", config.unit], check=False)
+        # Reset failed quietly
+        run_cmd(
+            ["systemctl", "--user", "reset-failed", config.unit],
+            check=False,
+            capture=True,
+        )
+    else:
+        console.print(f"[yellow]Unit {config.unit} not active; cleaning up state[/yellow]")
 
     # Remove run log symlink
     if config.runlog.exists() or config.runlog.is_symlink():
