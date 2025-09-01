@@ -7,6 +7,7 @@ Implements the core logic for service management via systemd-run --user
 import os
 import subprocess
 import hashlib
+import shlex
 from pathlib import Path
 from typing import Optional, List
 import typer
@@ -67,13 +68,16 @@ class ServiceConfig:
         ]
 
     def _compute_unit_suffix(self) -> str:
-        """Compute 8-char hash suffix for unit name"""
-        abs_path = os.path.abspath(".")
+        """Compute 8-char hash suffix for unit name based on project path"""
+        base = self.project or "."
+        abs_path = os.path.abspath(base)
         return hashlib.sha1(abs_path.encode()).hexdigest()[:8]
 
     def get_uv_cmd(self) -> List[str]:
         """Get the uv run command for this service"""
-        base_cmd = ["uv", "run", "--project", self.project, "--", self.entry]
+        # Split ENTRY into tokens to support values like "python main.py"
+        entry_tokens = shlex.split(self.entry)
+        base_cmd = ["uv", "run", "--project", self.project, "--", *entry_tokens]
         if self.reload:
             # Check if watchexec is available
             if not shutil.which("watchexec"):
@@ -163,8 +167,7 @@ def up(
             config.pid_file.write_text(str(pid if pid > 0 else 0))
         except Exception as e:
             console.print(f"[yellow]Warning: Could not write PID file: {e}[/yellow]")
-        console.print(f"[yellow]Unit {config.unit} already active[/yellow]
-")
+        console.print(f"[yellow]Unit {config.unit} already active[/yellow]")
         return
 
     console.print(f"Starting unit [bold]{config.unit}[/bold]")
@@ -511,7 +514,7 @@ def doctor(
     os.environ["PYTHONUNBUFFERED"] = "1"
 
     # Run without watchexec in doctor mode for simpler debugging
-    cmd = ["uv", "run", "--project", config.project, "--", config.entry]
+    cmd = ["uv", "run", "--project", config.project, "--", *shlex.split(config.entry)]
     run_cmd(cmd)
 
 

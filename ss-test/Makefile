@@ -1,8 +1,10 @@
+# Quiet by default. Use: make VERBOSE=1 <target>
 ifeq ($(VERBOSE),1)
   # Verbose: default GNU make behavior
 else
   .SILENT:
   MAKEFLAGS += --no-print-directory
+  # MAKEFLAGS += --output-sync=target
 endif
 
 # BEGIN: we-managed-block
@@ -15,7 +17,7 @@ WE_SERVICES := ss-test
 .PHONY: up.$(SERVICE) down.$(SERVICE) ps.$(SERVICE) logs.$(SERVICE) follow.$(SERVICE) restart.$(SERVICE) doctor.$(SERVICE) unit.$(SERVICE) journal.$(SERVICE) watch.$(SERVICE) launch.$(SERVICE) run.$(SERVICE) kill.$(SERVICE) up down ps logs follow restart doctor unit journal watch launch run kill
 
 # Unit identity
-UNIT_SUFFIX := $(shell python -c "import hashlib,os; import sys; print(hashlib.sha1(os.path.abspath('.').encode()).hexdigest()[:8])")
+UNIT_SUFFIX := $(shell python -c "import hashlib,os; import sys; print(hashlib.sha1(os.path.abspath('.' + os.sep).encode()).hexdigest()[:8])")
 UNIT := we-$(SERVICE)-$(UNIT_SUFFIX)
 
 # Locations
@@ -32,93 +34,184 @@ WEX := $(shell command -v watchexec >/dev/null 2>&1 && echo "watchexec --restart
 CMD_RELOAD := cd "$(PROJECT)" && $(WEX) uv run --project "$(PROJECT)" -- $(ENTRY)
 CMD_PLAIN := cd "$(PROJECT)" && uv run --project "$(PROJECT)" -- $(ENTRY)
 
+# Python CLI path fallback (used only if tools/uuctl.py is absent in project)
+UUCTL_FALLBACK := $(HOME)/.local/share/we/tools/uuctl.py
+
 # ensure directories and RUNLOG symlink, then start under systemd-run
 up.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" 	  uv run -- python tools/uuctl.py up
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
+	    uv run -- python tools/uuctl.py up; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" up; \
+	fi
 
 # stop unit and cleanup ephemeral files
 down.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" 	  uv run -- python tools/uuctl.py down
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python tools/uuctl.py down; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" down; \
+	fi
 
 # one-line ps output
 ps.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" 	  uv run -- python tools/uuctl.py ps
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python tools/uuctl.py ps; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" ps; \
+	fi
 
 # logs: show tail of RUNLOG, fallback to journal
 logs.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" TAIL="$(TAIL)" 	  uv run -- python tools/uuctl.py logs
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" TAIL="$(TAIL)" \
+	    uv run -- python tools/uuctl.py logs; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" TAIL="$(TAIL)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" logs; \
+	fi
 
 # follow logs
 follow.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" 	  uv run -- python tools/uuctl.py follow
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python tools/uuctl.py follow; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" follow; \
+	fi
 
 # restart
 restart.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" 	  uv run -- python tools/uuctl.py restart
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
+	    uv run -- python tools/uuctl.py restart; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" KEEP_N="$(KEEP_N)" SECURE="$(SECURE)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" restart; \
+	fi
 
 # foreground doctor mode (no systemd)
 doctor.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" 	  uv run -- python tools/uuctl.py doctor
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python tools/uuctl.py doctor; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" doctor; \
+	fi
 
 unit.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" 	  uv run -- python tools/uuctl.py unit
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python tools/uuctl.py unit; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" unit; \
+	fi
 
 journal.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" 	  uv run -- python tools/uuctl.py journal
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python tools/uuctl.py journal; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" journal; \
+	fi
 
+# watch: restart-if-running then follow
 watch.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" 	  uv run -- python tools/uuctl.py watch
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
+	    uv run -- python tools/uuctl.py watch; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" watch; \
+	fi
 
+# launch: restart-if-running then show recent logs (alias: run)
 launch.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" 	  uv run -- python tools/uuctl.py launch
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
+	    uv run -- python tools/uuctl.py launch; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" RELOAD="$(RELOAD)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" launch; \
+	fi
 
 run.$(SERVICE): launch.$(SERVICE)
 
+# kill: stop all we-$(SERVICE)-* user units
 kill.$(SERVICE):
-	@cd "$(PROJECT)" && SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" 	  uv run -- python tools/uuctl.py kill
+	@cd "$(PROJECT)" && if [ -f tools/uuctl.py ]; then \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python tools/uuctl.py kill; \
+	else \
+	  env SERVICE="$(SERVICE)" PROJECT="$(PROJECT)" ENTRY="$(ENTRY)" \
+	    uv run -- python "$(UUCTL_FALLBACK)" kill; \
+	fi
 
 # unsuffixed guard
 # Unsuffixed proxy targets - proxy to the single service or error with hint
-DEFAULT_SERVICE := $(firstword $(WE_SERVICES))
+DEFAULT_SERVICE := \$(firstword \$(WE_SERVICES))
 
 up:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) up.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) up.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) up.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 down:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) down.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) down.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) down.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 ps:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) ps.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) ps.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) ps.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 logs:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) logs.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) logs.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) logs.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 follow:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) follow.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) follow.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) follow.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 restart:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) restart.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) restart.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) restart.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 doctor:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) doctor.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) doctor.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) doctor.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 unit:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) unit.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) unit.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) unit.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 journal:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) journal.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) journal.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) journal.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 watch:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) watch.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) watch.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) watch.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 launch:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) launch.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) launch.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) launch.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 run:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) run.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) run.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) run.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 kill:
-	@if [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) kill.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
+	@if [ -n "$(SERVICE)" ]; then $(MAKE) kill.$(SERVICE); \
+	elif [ $(words $(WE_SERVICES)) -eq 1 ]; then $(MAKE) kill.$(DEFAULT_SERVICE); else echo "Multiple services: $(WE_SERVICES). Use SERVICE=<name>"; exit 1; fi
 
 # helper lines expected by validator
 check-service:

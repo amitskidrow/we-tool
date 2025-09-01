@@ -292,11 +292,12 @@ EOF
 
 
 ensure_gitignore(){
-  if [ ! -f .gitignore ]; then
-    echo ".we/" > .gitignore
+  local gitignore_path="${PROJECT}/.gitignore"
+  if [ ! -f "$gitignore_path" ]; then
+    echo ".we/" > "$gitignore_path"
   else
-    if ! grep -q "^\.we/" .gitignore; then
-      echo ".we/" >> .gitignore
+    if ! grep -q "^\\.we/" "$gitignore_path"; then
+      echo ".we/" >> "$gitignore_path"
     fi
   fi
 }

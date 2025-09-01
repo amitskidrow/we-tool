@@ -32,9 +32,37 @@ parse_args(){
     esac
   done
 
+  # Enforce a single, strict invocation form: we ./<target_dir_with_main_pythonfile>
   if [ -z "$MODULE_ARG" ]; then
-    echo "module path required"; usage; exit 1
+    echo "ERROR: target directory is required." >&2
+    echo "Use: we ./<target_dir_with_main_pythonfile> (see 'we --help')" >&2
+    exit 1
   fi
-  MODULE_ARG_ABS=$(python -c "import os,sys; p=sys.argv[1] if len(sys.argv)>1 else '.'; print(os.path.abspath(p))" "$MODULE_ARG")
+
+  # Reject '.' and any form not starting with './'
+  case "$MODULE_ARG" in
+    .|./) echo "ERROR: '.' is not allowed. Provide a specific subdirectory under the current directory." >&2; exit 1;;
+    ./*) : ;; # ok
+    *) echo "ERROR: Invalid target '$MODULE_ARG'. Use: we ./<target_dir_with_main_pythonfile>" >&2; exit 1;;
+  esac
+
+  # Must be an existing directory
+  if [ ! -d "$MODULE_ARG" ]; then
+    echo "ERROR: Target is not a directory: $MODULE_ARG" >&2
+    exit 1
+  fi
+
+  # Validate presence of a main Python file in the target directory
+  local has_main=0
+  for f in __main__.py main.py run.py app.py index.py start.py; do
+    if [ -f "$MODULE_ARG/$f" ]; then has_main=1; break; fi
+  done
+  if [ "$has_main" -ne 1 ]; then
+    echo "ERROR: '$MODULE_ARG' does not contain a main Python file (one of: __main__.py, main.py, run.py, app.py, index.py, start.py)." >&2
+    echo "Use: we ./<target_dir_with_main_pythonfile>" >&2
+    exit 1
+  fi
+
+  MODULE_ARG_ABS=$(python -c "import os,sys; p=sys.argv[1]; print(os.path.abspath(p))" "$MODULE_ARG")
   TARGET_MODULE="$MODULE_ARG_ABS"
 }

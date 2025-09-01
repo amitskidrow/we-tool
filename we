@@ -13,9 +13,18 @@ main() {
   parse_args "$@"
   resolve_project
 
+  # Auto-accept confirmation when invoked on a directory module
+  if [ -d "$MODULE" ]; then
+    YES=1
+  fi
+
   # If MAKEFILE_OUT is still the default, change it to be in the PROJECT directory
   if [ "$MAKEFILE_OUT" = "Makefile" ]; then
     MAKEFILE_OUT="$PROJECT/Makefile"
+  fi
+  # If README_OUT is still the default, change it to be in the PROJECT directory
+  if [ "$README_OUT" = "README.md" ]; then
+    README_OUT="$PROJECT/README.md"
   fi
 
   compute_defaults
@@ -25,8 +34,12 @@ main() {
     exit 0
   fi
 
-  upsert_makefile "$MAKEFILE_OUT"
-  upsert_readme "$README_OUT"
+  if [ "${README_ONLY:-0}" != "1" ]; then
+    upsert_makefile "$MAKEFILE_OUT"
+  fi
+  if [ "${MK_ONLY:-0}" != "1" ]; then
+    upsert_readme "$README_OUT"
+  fi
   ensure_gitignore
 
   echo "we: generated Make block and README block for service '$SERVICE'"
